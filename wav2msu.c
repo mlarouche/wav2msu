@@ -20,7 +20,7 @@
 // IN THE SOFTWARE.
 
 #include <errno.h>
-#include <getopt.h>
+#include "getopt.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -29,6 +29,8 @@
     #include <io.h>
     #include <fcntl.h>
 #endif
+
+static const size_t BufferSize = 8192;
 
 void print_usage();
 void print_help();
@@ -205,19 +207,29 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+	uint8_t readBuffer[BufferSize];
+
     loop_point = (int32_t) loop_point;
     fprintf(outfile, "MSU1");
     fwrite(&loop_point, sizeof(loop_point), 1, outfile);
-    if (intro_flag == 1) {
-        int c;
-        while ((c = getc(introfile)) != EOF)
-            putc(c, outfile);
-    }
-    int c;
-    while ((c = getc(infile)) != EOF)
-        putc(c, outfile);
-    fclose(outfile);
-    fclose(infile);
+    if (intro_flag == 1)
+	{
+		size_t size = 0;
+		
+		while(size = fread(readBuffer, 1, BufferSize, introfile))
+		{
+			fwrite(readBuffer, 1, size, outfile);
+		}
+	}
 
-    return 0;
+	size_t size = 0;
+	while(size = fread(readBuffer, 1, BufferSize, infile))
+	{
+		fwrite(readBuffer, 1, size, outfile);
+	}
+
+	fclose(outfile);
+	fclose(infile);
+
+	return 0;
 }
